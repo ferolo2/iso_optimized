@@ -1,2 +1,2 @@
-# beyond_iso
-Code for the three-particle quantization condition including d-wave.
+#iso_optimized
+Optimized code for the isotropic approximation
