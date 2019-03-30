@@ -29,17 +29,17 @@ def F3i_eigs(E,L,a0,r0,P0,a2,alpha):
 
 
 # Just compute l'=l=0 portion of F3
-@jit(fastmath=True,cache=True)
-def F3mat00_old(E,L,a0,r0,P0,a2,alpha,IPV=0):
-  F00 = Fmat00(E,L,alpha,IPV)
-  Hi00 = chop(LA.inv(Hmat00(E,L,a0,r0,P0,alpha,IPV)))
-  return 1/L**3 * chop((1/3*F00 - F00@Hi00@F00))
+# @jit(fastmath=True,cache=True)
+# def F3mat00_old(E,L,a0,r0,P0,a2,alpha,IPV=0):
+#   F00 = Fmat00(E,L,alpha,IPV)
+#   Hi00 = chop(LA.inv(Hmat00(E,L,a0,r0,P0,alpha,IPV)))  # TB: slow (computes F00 twice)
+#   return 1/L**3 * chop((1/3*F00 - F00@Hi00@F00))
 
 @jit(fastmath=True,cache=True)
 def F3mat00(E,L,a0,r0,P0,a2,alpha,IPV=0):
-  F00 = Fmat00(E,L,alpha,IPV)  
+  F00 = Fmat00(E,L,alpha,IPV)
   Gt00 = Gmatrix.Gmat00(E,L)
-  K2it00 = K2i_mat.K2inv_mat00(E,L,a0,r0,P0,IPV)  
+  K2it00 = K2i_mat.K2inv_mat00(E,L,a0,r0,P0,IPV)
   Hi00 = chop(LA.inv( K2it00 + F00 + Gt00  ))
   return 1/L**3 * chop((1/3*F00 - F00@Hi00@F00))
 
@@ -61,7 +61,7 @@ def F3mat00iso(E,L,Lista0,r0,P0,a2,alpha,IPV=0):
     f3mat = 1/L**3 * chop((F00o3 - F00@Hi00@F00))
     res.append(1./(ones@f3mat@ones))
   return res
-    
+
 
 def F3imat00(E,L,a0,r0,P0,a2,alpha,IPV=0):
   return chop(LA.inv(F3mat00(E,L,a0,r0,P0,a2,alpha,IPV)))
@@ -119,23 +119,42 @@ def F3i_22_I_eigs(E,L,a0,r0,P0,a2,alpha,I):
 # Isotropic approx (A1+ projection, l=0)
 # These functions correctly use only the l=l'=0 part of each matrix appearing in F3
 
-# F3, isotropic approx
-def F3_iso_mat(E,L,a0,r0,P0,a2,alpha):
+# F3, isotropic approx (new method just using l'=l=0, A1+ subspace)
+def F3_iso_fast(E,L,a0,r0,P0,a2,alpha):
+  Ft00_A1 = Fmat00_A1(E,L,alpha)
+  Gt00_A1 = Gmatrix.Gmat00_A1(E,L)
+  K2it00_A1 = K2i_mat.K2inv_mat00_A1(E,L,a0,r0,P0)
+
+  Hi_00_A1 = chop(LA.inv(K2it00_A1 + Ft00_A1 + Gt00_A1))
+  F3_00_A1 = 1/L**3 *  ( 1/3*Ft00_A1 - Ft00_A1 @ Hi_00_A1 @ Ft00_A1 )
+
+  shells = shell_list(E,L)
+  F3_iso = 0
+  for ip in range(len(shells)):
+    for ik in range(len(shells)):
+      F3_iso += F3_00_A1[ip,ik] * sqrt(len(shell_nnk_list(shells[ip]))*len(shell_nnk_list(shells[ik])))
+  return F3_iso
+
+
+# F3, isotropic approx (old, slow way)
+def F3_iso_old(E,L,a0,r0,P0,a2,alpha):
   return proj.iso_proj00(F3mat00(E,L,a0,r0,P0,a2,alpha),E,L)
 
-# Inverse matrix, isotropic approx
-def F3i_iso_mat(E,L,a0,r0,P0,a2,alpha):
-  F3_iso = F3_iso_mat(E,L,a0,r0,P0,a2,alpha)
 
-  if F3_iso.shape==():
-    return 1/F3_iso
-  else:
-    return chop(LA.inv(F3_iso))
 
-# Inverse matrix eigenvalues (isotropic approx)
-def F3i_iso_eigs(E,L,a0,r0,P0,a2,alpha):
-  F3i_iso = F3i_iso_mat(E,L,a0,r0,P0,a2,alpha)
-  return np.array(sorted(LA.eigvals(F3i_iso))).real
+# Inverse matrix, isotropic approx (this is trivial; F3_iso is a scalar)
+# def F3i_iso(E,L,a0,r0,P0,a2,alpha):
+#   F3_iso = F3_iso(E,L,a0,r0,P0,a2,alpha)
+#
+#   if F3_iso.shape==():
+#     return 1/F3_iso
+#   else:
+#     return chop(LA.inv(F3_iso))
+
+# Inverse matrix eigenvalues in isotropic approx (trivial; F3_iso is a scalar)
+# def F3i_iso_eigs(E,L,a0,r0,P0,a2,alpha):
+#   F3i_iso = F3i_iso(E,L,a0,r0,P0,a2,alpha)
+#   return np.array(sorted(LA.eigvals(F3i_iso))).real
 
 
 
@@ -147,7 +166,7 @@ def F3i_iso_eigs(E,L,a0,r0,P0,a2,alpha):
 # Inverse matrix eigenvalues (irrep I projection, single shell & l)
 def F3i_I_eigs_o_l(E,L,a0,r0,P0,a2,alpha,I,shell,l):
   F3 = F3mat(E,L,a0,r0,P0,a2,alpha)
-  
+
   F3_I_o_l = proj.irrep_proj_o_l( F3,E,L,I,shell,l )
   F3i_I_o_l = chop(LA.inv(F3_I_o_l))
 
@@ -159,7 +178,7 @@ def F3i_I_eigs_o_l(E,L,a0,r0,P0,a2,alpha,I,shell,l):
 # Inverse matrix eigenvalues (irrep I projection, single shell, contains l=0 and l=2)
 def F3i_I_eigs_o(E,L,a0,r0,P0,a2,alpha,I,shell):
   F3 = F3mat(E,L,a0,r0,P0,a2,alpha)
-  
+
   F3_I_o = proj.irrep_proj_o( F3,E,L,I,shell )
   F3i_I_o = chop(LA.inv(F3_I_o))
 
@@ -207,6 +226,3 @@ def F3mat_old(E,L,a0,r0,P0,a2):
 
 def F3i_mat_old(E,L,a0,r0,P0,a2):
   return LA.inv(F3mat_old(E,L,a0,r0,P0,a2))
-
-
-

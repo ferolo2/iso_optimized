@@ -316,7 +316,7 @@ def Fmat00(E,L,alpha,IPV=0):
   shells = shell_list(E,L)
 
 
-  
+
   F_list = []
   for nnk in shells:
     nk = sums.norm(nnk)
@@ -335,7 +335,16 @@ def Fmat22(E,L,alpha):
   return l2_proj(Fmat(E,L,alpha))
 
 
+# Just compute l'=l=0 portion in A1+ irrep (for H^-1 in iso approx)
+def Fmat00_A1(E,L,alpha):
+  shells = shell_list(E,L)
 
+  F_list = []
+  for nnk in shells:
+    # All k's in the same shell give the same F(k) (s-wave case only)
+    F_list.append(sums.F2KSS(E,L,nnk,0,0,0,0,alpha))
+
+  return np.diag(F_list)
 
 
 

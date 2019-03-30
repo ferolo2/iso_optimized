@@ -106,6 +106,16 @@ def K2inv_mat22(E,L,a2):
   return block_diag(*K2inv22)
 
 
+# Just compute l'=l=0 portion of K2inv in A1+ irrep (for H^-1 in iso approx)
+def K2inv_mat00_A1(E,L,a0,r0,P0):
+  shells = defns.shell_list(E,L)
+  out = []
+  for nkvec in shells:
+    kvec = [i*2*pi/L for i in nkvec]
+    out.append(K2inv(E,kvec,0,0,a0,r0,P0,0))
+  return np.diag(out)
+
+
 ###########################################################
 # Old matrix structure
 ###########################################################

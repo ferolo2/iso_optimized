@@ -39,16 +39,16 @@ def l2_proj(M):
 # Note: normalization convention seems irrelevant
 def p_iso00(E,L):
   # No normalization
-#  p_iso = np.ones((len(defns.list_nnk(E,L)),1))
+  p_iso = np.ones((len(defns.list_nnk(E,L)),1))
 
   # Steve's convention: each column corresponds to a shell with 1/sqrt(N) normalization (so each vector has length=1)
-  shells = defns.shell_list(E,L)
-  p_iso = np.zeros((len(defns.list_nnk(E,L)),len(shells)))
-  i_k = 0
-  for i_shell in range(len(shells)):
-    N = len(defns.shell_nnk_list(shells[i_shell]))
-    p_iso[i_k:i_k+N,i_shell] = 1/sqrt(N)
-    i_k += N
+  # shells = defns.shell_list(E,L)
+  # p_iso = np.zeros((len(defns.list_nnk(E,L)),len(shells)))
+  # i_k = 0
+  # for i_shell in range(len(shells)):
+  #   N = len(defns.shell_nnk_list(shells[i_shell]))
+  #   p_iso[i_k:i_k+N,i_shell] = 1/sqrt(N)
+  #   i_k += N
 #  print(p_iso)
 #  print(np.sum(p_iso,axis=1))
 #  return np.sum(p_iso,axis=1)

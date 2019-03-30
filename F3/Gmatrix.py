@@ -173,6 +173,28 @@ def Gmat22(E,L):
   return chop(np.block(Gfull))
 
 
+# Just compute l'=l=0 portion in A1+ irrep (used to get iso part of H^-1)
+def Gmat00_A1(E,L):
+  shells = shell_list(E,L)
+  Nshells = len(shells)
+
+  out = np.zeros((Nshells,Nshells))
+  # Each row/column corresponds to a different shell
+  for ip in range(Nshells):
+    op = shell_nnk_list(shells[ip])     # list of nnp's in shell op (index = ip)
+    for ik in range(ip,Nshells):
+      ok = shell_nnk_list(shells[ik])   # list of nnk's in shell ok (index = ik)
+
+      # Sum over G(p,k) for p in op & k in ok (part of A1+ projection)
+      for nnp in op:
+        for nnk in ok:
+          out[ip,ik] += G(E,L,nnp,nnk,0,0,0,0)
+      out[ip,ik] *= 1/npsqrt(len(op)*len(ok))   # normalization factor
+
+      if ip != ik:
+        out[ik,ip] = out[ip,ik]   # take advantage of symmetry
+
+  return chop(out)
 
 ######################################################################
 # Old structure/Fernando code
